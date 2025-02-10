@@ -10,12 +10,36 @@ jobs:
   upload_episode:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install yt-dlp
+
+      - name: Download YouTube Video
+        run: |
+          yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
+          --cookies-from-browser chrome \
+          --cookies <(echo "${{ secrets.YOUTUBE_COOKIES }}") \
+          -o "episode.mp4" "$(jq -r '.id' episode.json)"
+
+      - name: Convert video to MP3 (optional, if you need only audio)
+        run: |
+          ffmpeg -i episode.mp4 -vn -acodec libmp3lame -q:a 2 episode.mp3
+
       - name: Upload Episode from YouTube To Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
-          LOAD_THUMBNAIL: true  # ישתמש בתמונה מהסרטון
-          URL_IN_DESCRIPTION: true  # יוסיף את קישור הסרטון לתיאור הפודקאסט
+          LOAD_THUMBNAIL: true
+          URL_IN_DESCRIPTION: true
