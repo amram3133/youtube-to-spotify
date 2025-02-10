@@ -24,22 +24,21 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install yt-dlp
 
-      - name: Download YouTube Video
+      - name: Create cookies.txt file from secret
+        run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+
+      - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
-          --cookies-from-browser chrome \
-          --cookies <(echo "${{ secrets.YOUTUBE_COOKIES }}") \
+          --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      - name: Convert video to MP3 (optional, if you need only audio)
-        run: |
-          ffmpeg -i episode.mp4 -vn -acodec libmp3lame -q:a 2 episode.mp3
-
-      - name: Upload Episode from YouTube To Spotify
+      - name: Upload Video Episode to Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
-          EPISODE_PATH: /github/workspace
+          EPISODE_PATH: /github/workspace/episode.mp4
           LOAD_THUMBNAIL: true
           URL_IN_DESCRIPTION: true
