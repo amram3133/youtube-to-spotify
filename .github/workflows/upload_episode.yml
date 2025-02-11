@@ -22,25 +22,43 @@ jobs:
       - name: Install yt-dlp
         run: pip install yt-dlp
 
+      #  ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
+      - name: Debug GitHub Secret
+        run: |
+          if [ -z "${{ secrets.YOUTUBE_COOKIES }}" ]; then
+            echo "❌ GitHub Secret YOUTUBE_COOKIES is empty or missing!"
+            exit 1
+          else
+            echo "✅ GitHub Secret YOUTUBE_COOKIES exists!"
+          fi
+
+      # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
+      - name: Create cookies.txt from GitHub Secrets
+        run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+
+      # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
       - name: Debug cookies file
         run: |
           echo "===== Debugging cookies.txt ====="
           if [ -f cookies.txt ]; then
-            echo "cookies.txt exists ✅"
+            echo "✅ cookies.txt exists!"
           else
-            echo "cookies.txt is missing ❌"
+            echo "❌ cookies.txt is missing!"
             exit 1
           fi
-          cat cookies.txt | head -n 20
+          echo "===== Showing first 20 lines of cookies.txt ====="
+          head -n 20 cookies.txt
           echo "===== Showing special characters ====="
-          cat cookies.txt | od -c
+          od -c cookies.txt
 
+      # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
+      # ✅ העלאת הסרטון ל-Spotify for Podcasters
       - name: Upload Video Episode to Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
