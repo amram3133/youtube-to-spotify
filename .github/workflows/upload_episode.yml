@@ -22,34 +22,51 @@ jobs:
       - name: Install yt-dlp
         run: pip install yt-dlp
 
-      # ✅ שימוש ב-cookies.txt שכבר הועלה ל-Secrets
-      - name: Load cookies.txt from Secrets
+      # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
+      - name: Debug GitHub Secret
         run: |
-          echo "${{ secrets.YOUTUBE_COOKIES }}" | base64 --decode > cookies.txt
-          echo "✅ Using existing cookies.txt!"
+          if [ -z "${{ secrets.YOUTUBE_COOKIES }}" ]; then
+            echo "❌ GitHub Secret YOUTUBE_COOKIES is empty or missing!"
+            exit 1
+          else
+            echo "✅ GitHub Secret YOUTUBE_COOKIES exists!"
+            echo "==== First 50 characters of YOUTUBE_COOKIES ===="
+            echo "${{ secrets.YOUTUBE_COOKIES }}" | cut -c 1-50
+          fi
 
-      # ✅ בדיקה אם הקובץ קיים
-      - name: Verify cookies.txt exists
+      # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
+      - name: Create cookies.txt from GitHub Secrets
         run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
+          echo "✅ Created cookies.txt successfully!"
+
+      # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
+      - name: Debug cookies file
+        run: |
+          echo "===== Debugging cookies.txt ====="
           if [ -f cookies.txt ]; then
-            echo "✅ cookies.txt is ready for use!"
+            echo "✅ cookies.txt exists!"
           else
             echo "❌ cookies.txt is missing!"
             exit 1
           fi
+          echo "===== Showing first 20 lines of cookies.txt ====="
+          head -n 20 cookies.txt
+          echo "===== Showing special characters ====="
+          od -c cookies.txt
 
-      # ✅ שימוש ב-cookies.txt להורדת הווידאו
+      # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      # ✅ העלאת הווידאו ל-Spotify **עם שימוש ב-cookies.txt**
+      # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
-          YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
+          COOKIES_FILE: "/github/workspace/cookies.txt"
