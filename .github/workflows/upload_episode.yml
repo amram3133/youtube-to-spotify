@@ -22,7 +22,7 @@ jobs:
       - name: Install yt-dlp
         run: pip install yt-dlp
 
-      #  ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
+      # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
         run: |
           if [ -z "${{ secrets.YOUTUBE_COOKIES }}" ]; then
@@ -30,11 +30,15 @@ jobs:
             exit 1
           else
             echo "✅ GitHub Secret YOUTUBE_COOKIES exists!"
+            echo "==== First 50 characters of YOUTUBE_COOKIES ===="
+            echo "${{ secrets.YOUTUBE_COOKIES }}" | cut -c 1-50
           fi
 
       # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
       - name: Create cookies.txt from GitHub Secrets
-        run: echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+        run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
+          echo "✅ Created cookies.txt successfully!"
 
       # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
       - name: Debug cookies file
