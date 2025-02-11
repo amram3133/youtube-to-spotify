@@ -1,4 +1,4 @@
-name: 'Upload Episode from YouTube To Spotify'
+name: Upload Episode from YouTube To Spotify
 
 on:
   push:
@@ -9,45 +9,41 @@ on:
 jobs:
   upload_episode:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          pip install yt-dlp
+      - name: Install yt-dlp
+        run: pip install yt-dlp
 
-      - name: Create cookies.txt file from secret
+      - name: Debug cookies file
         run: |
-          echo "${{ secrets.YOUTUBE_COOKIES }}" > cookies.txt
+          echo "===== Debugging cookies.txt ====="
+          if [ -f cookies.txt ]; then
+            echo "cookies.txt exists ✅"
+          else
+            echo "cookies.txt is missing ❌"
+            exit 1
+          fi
+          cat cookies.txt | head -n 20
+          echo "===== Showing special characters ====="
+          cat cookies.txt | od -c
 
       - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
-- name: Debug cookies file
-  run: |
-    echo "===== Debugging cookies.txt ====="
-    cat cookies.txt | head -n 20
-    echo "===== Showing special characters ====="
-    cat cookies.txt | od -c
 
-- name: Upload Video Episode to Spotify
-  uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
-  
       - name: Upload Video Episode to Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
-          EPISODE_PATH: /github/workspace/episode.mp4
-          LOAD_THUMBNAIL: true
-          URL_IN_DESCRIPTION: true
+          EPISODE_PATH: /github/workspace
