@@ -69,4 +69,12 @@ jobs:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
-          COOKIES_FILE: "/github/workspace/cookies.txt"
+          YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
+      - name: Debug Cookies and Video Info
+        run: |
+          echo "==== Debugging cookies.txt before upload ===="
+          ls -lh /github/workspace/cookies.txt
+          cat /github/workspace/cookies.txt | head -n 20
+          echo "==== Checking if the video file exists ===="
+          ls -lh /github/workspace/episode.mp4
+
