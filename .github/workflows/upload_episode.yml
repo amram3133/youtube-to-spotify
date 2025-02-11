@@ -33,6 +33,12 @@ jobs:
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
+- name: Debug cookies file
+  run: |
+    echo "===== Debugging cookies.txt ====="
+    cat cookies.txt | head -n 20
+    echo "===== Showing special characters ====="
+    cat cookies.txt | od -c
 
       - name: Upload Video Episode to Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
