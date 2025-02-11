@@ -40,6 +40,9 @@ jobs:
     echo "===== Showing special characters ====="
     cat cookies.txt | od -c
 
+- name: Upload Video Episode to Spotify
+  uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
+  
       - name: Upload Video Episode to Spotify
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
         env:
