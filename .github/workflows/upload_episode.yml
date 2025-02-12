@@ -58,18 +58,33 @@ jobs:
           -o "episode.mp4" "$(jq -r '.id' episode.json)" || { echo "❌ yt-dlp failed!"; exit 1; }
           echo "✅ Video download completed!"
 
-      # ✅ הצגת כל הקבצים שנוצרו בתיקייה
-      - name: List all files in workspace
+      # ✅ בדיקה לאיזו ספרייה אנחנו נמצאים
+      - name: Check current directory
         run: |
-          echo "===== Listing files in workspace ====="
-          ls -lh /github/workspace
+          echo "===== Checking current working directory ====="
+          pwd
+          ls -lh
+
+      # ✅ בדיקה אם הספרייה /github/workspace קיימת
+      - name: Check if workspace directory exists
+        run: |
+          echo "===== Checking /github/workspace directory ====="
+          if [ -d "/github/workspace" ]; then
+            echo "✅ /github/workspace exists!"
+            ls -lh /github/workspace
+          else
+            echo "❌ /github/workspace is missing!"
+            exit 1
+          fi
 
       # ✅ בדיקה אם הסרטון ירד בהצלחה
       - name: Check if episode.mp4 exists
         run: |
           echo "===== Checking downloaded video file ====="
           if [ -f "episode.mp4" ]; then
-            echo "✅ episode.mp4 exists!"
+            echo "✅ episode.mp4 exists in current directory!"
+          elif [ -f "/github/workspace/episode.mp4" ]; then
+            echo "✅ episode.mp4 found in /github/workspace!"
           else
             echo "❌ episode.mp4 is missing!"
             exit 1
