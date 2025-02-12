@@ -14,6 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Set working directory
+        run: |
+          echo "===== Checking current working directory ====="
+          pwd
+          echo "===== Listing files in current directory ====="
+          ls -lh
+          echo "===== Changing working directory to repository location ====="
+          cd /home/runner/work/youtube-to-spotify/youtube-to-spotify || exit 1
+          echo "===== New working directory ====="
+          pwd
+          echo "WORKSPACE_PATH=/home/runner/work/youtube-to-spotify/youtube-to-spotify" >> $GITHUB_ENV
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
@@ -30,6 +42,8 @@ jobs:
             exit 1
           else
             echo "✅ GitHub Secret YOUTUBE_COOKIES exists!"
+            echo "==== First 50 characters of YOUTUBE_COOKIES ===="
+            echo "${{ secrets.YOUTUBE_COOKIES }}" | cut -c 1-50
           fi
 
       # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
@@ -38,89 +52,46 @@ jobs:
           echo "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
           echo "✅ Created cookies.txt successfully!"
 
-      # ✅ בדיקה אם הקובץ נוצר ונראה תקין
-      - name: Verify cookies.txt format
+      # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
+      - name: Debug cookies file
         run: |
-          echo "===== Checking cookies.txt file ====="
-          if grep -q 'youtube.com' cookies.txt; then
-            echo "✅ cookies.txt contains YouTube cookies."
+          echo "===== Debugging cookies.txt ====="
+          if [ -f cookies.txt ]; then
+            echo "✅ cookies.txt exists!"
           else
-            echo "❌ cookies.txt does not contain valid YouTube cookies!"
+            echo "❌ cookies.txt is missing!"
             exit 1
           fi
+          echo "===== Showing first 20 lines of cookies.txt ====="
+          head -n 20 cookies.txt
+          echo "===== Showing special characters ====="
+          od -c cookies.txt
 
-      # ✅ הורדת הסרטון מ-YouTube
+      # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
-          echo "===== Starting video download ====="
-          yt-dlp -v -f bestvideo+bestaudio --merge-output-format mp4 \
+          yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
-          -o "episode.mp4" "$(jq -r '.id' episode.json)" || { echo "❌ yt-dlp failed!"; exit 1; }
-          echo "✅ Video download completed!"
+          -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      # ✅ בדיקה לאיזו ספרייה אנחנו נמצאים
-      - name: Check current directory
-        run: |
-          echo "===== Checking current working directory ====="
-          pwd
-          ls -lh
-
-      # ✅ בדיקה אם הספרייה /github/workspace קיימת
-      - name: Check if workspace directory exists
-        run: |
-          echo "===== Checking /github/workspace directory ====="
-          if [ -d "/github/workspace" ]; then
-            echo "✅ /github/workspace exists!"
-            ls -lh /github/workspace
-          else
-            echo "❌ /github/workspace is missing!"
-            exit 1
-          fi
-
-      # ✅ בדיקה אם הסרטון ירד בהצלחה
-      - name: Check if episode.mp4 exists
+      # ✅ בדיקה אם הקובץ episode.mp4 קיים
+      - name: Check Downloaded Video
         run: |
           echo "===== Checking downloaded video file ====="
-          if [ -f "episode.mp4" ]; then
-            echo "✅ episode.mp4 exists in current directory!"
-          elif [ -f "/github/workspace/episode.mp4" ]; then
-            echo "✅ episode.mp4 found in /github/workspace!"
-          else
+          if [ ! -f episode.mp4 ]; then
             echo "❌ episode.mp4 is missing!"
+            echo "===== Listing all files in workspace ====="
+            ls -lh
             exit 1
+          else
+            echo "✅ episode.mp4 exists!"
           fi
-
-      # ✅ הדפסת מידע על הסרטון
-      - name: Debug yt-dlp output
-        run: |
-          echo "===== Debugging yt-dlp output ====="
-          yt-dlp --version
-          yt-dlp --help
-          echo "===== Checking available formats for video ====="
-          yt-dlp -F "$(jq -r '.id' episode.json)"
-
-      # ✅ התקנת Chromium לפעולת Puppeteer
-      - name: Install Chromium
-        run: |
-          echo "===== Installing Chromium ====="
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
-          echo "✅ Chromium installed successfully!"
 
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
-        uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
+        uses: amram3133/youtube_to_spotify@main
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
-          EPISODE_PATH: /github/workspace
-          YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
-
-      # ✅ הדפסת מידע נוסף אם יש שגיאות בהעלאה ל-Spotify
-      - name: Debug Cookies and Video Info
-        run: |
-          echo "==== Debugging cookies.txt before upload ===="
-          ls -lh /github/workspace/cookies.txt
-          cat /github/workspace/cookies.txt | head -n 20
-          echo "==== Checking if the video file exists ===="
-          ls -lh /github/workspace/episode.mp4"
+          EPISODE_PATH: /home/runner/work/youtube-to-spotify/youtube-to-spotify
+          YOUTUBE_COOKIES_PATH: "/home/runner/work/youtube-to-spotify/youtube-to-spotify/cookies.txt"
