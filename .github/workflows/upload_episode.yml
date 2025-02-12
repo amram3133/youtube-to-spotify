@@ -23,10 +23,9 @@ jobs:
         run: |
           pip install yt-dlp
           sudo apt-get update
-          sudo apt-get install -y wget curl unzip
-          sudo apt-get install -y chromium-browser
+          sudo apt-get install -y wget curl unzip chromium-browser
+          npm install
 
-      # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
         run: |
           if [ -z "${{ secrets.YOUTUBE_COOKIES }}" ]; then
@@ -38,52 +37,27 @@ jobs:
             echo "${{ secrets.YOUTUBE_COOKIES }}" | cut -c 1-50
           fi
 
-      # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
       - name: Create cookies.txt from GitHub Secrets
         run: |
           echo "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
           echo "✅ Created cookies.txt successfully!"
 
-      # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
-      - name: Debug cookies file
-        run: |
-          echo "===== Debugging cookies.txt ====="
-          if [ -f cookies.txt ]; then
-            echo "✅ cookies.txt exists!"
-          else
-            echo "❌ cookies.txt is missing!"
-            exit 1
-          fi
-          echo "===== Showing first 20 lines of cookies.txt ====="
-          head -n 20 cookies.txt
-          echo "===== Showing special characters ====="
-          od -c cookies.txt
-
-      # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      # ✅ התקנת Puppeteer ו-Chrome
       - name: Install Puppeteer and Chrome
         run: |
           npm install puppeteer
           npx puppeteer browsers install chrome
           echo "✅ Puppeteer and Chrome installed!"
 
-      # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
-      - name: Upload Video Episode to Spotify (Using Cookies)
-        uses: amram3133/youtube_to_spotify@main  # השתמש בריפוזיטורי שלך
+      - name: Run the YouTube to Spotify Script
+        run: npm start
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
           YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
-
-      # ✅ דיבוג אחרי העלאה
-      - name: Debug After Upload
-        run: |
-          echo "==== Debugging after Spotify upload ===="
-          ls -lh /github/workspace/
