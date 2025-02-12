@@ -1,0 +1,14 @@
+{
+  "name": "youtube-to-spotify",
+  "version": "1.0.0",
+  "description": "Upload YouTube videos to Spotify automatically",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.3.7",
+    "yt-dlp": "^2025.1.26",
+    "dotenv": "^16.3.1"
+  }
+}
