@@ -19,8 +19,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install yt-dlp
-        run: pip install yt-dlp
+      - name: Install dependencies
+        run: |
+          pip install yt-dlp
+          sudo apt-get update
+          sudo apt-get install -y wget curl unzip
+          sudo apt-get install -y chromium-browser
 
       # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
@@ -61,6 +65,13 @@ jobs:
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
+
+      # ✅ התקנת Puppeteer ו-Chrome
+      - name: Install Puppeteer and Chrome
+        run: |
+          npm install puppeteer
+          npx puppeteer browsers install chrome
+          echo "✅ Puppeteer and Chrome installed!"
 
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
