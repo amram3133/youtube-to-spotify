@@ -64,17 +64,15 @@ jobs:
 
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
-        uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
+        uses: amram3133/youtube_to_spotify@main  # השתמש בריפוזיטורי שלך
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
           YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
-      - name: Debug Cookies and Video Info
-        run: |
-          echo "==== Debugging cookies.txt before upload ===="
-          ls -lh /github/workspace/cookies.txt
-          cat /github/workspace/cookies.txt | head -n 20
-          echo "==== Checking if the video file exists ===="
-          ls -lh /github/workspace/episode.mp4
 
+      # ✅ דיבוג אחרי העלאה
+      - name: Debug After Upload
+        run: |
+          echo "==== Debugging after Spotify upload ===="
+          ls -lh /github/workspace/
