@@ -53,10 +53,16 @@ jobs:
       - name: Download YouTube Video (Full Video)
         run: |
           echo "===== Starting video download ====="
-          yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
+          yt-dlp -v -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)" || { echo "❌ yt-dlp failed!"; exit 1; }
           echo "✅ Video download completed!"
+
+      # ✅ הצגת כל הקבצים שנוצרו בתיקייה
+      - name: List all files in workspace
+        run: |
+          echo "===== Listing files in workspace ====="
+          ls -lh /github/workspace
 
       # ✅ בדיקה אם הסרטון ירד בהצלחה
       - name: Check if episode.mp4 exists
@@ -94,4 +100,4 @@ jobs:
           ls -lh /github/workspace/cookies.txt
           cat /github/workspace/cookies.txt | head -n 20
           echo "==== Checking if the video file exists ===="
-          ls -lh /github/workspace/episode.mp4"
+          ls -lh /github/workspace/episode.mp4
