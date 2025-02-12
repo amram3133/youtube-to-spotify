@@ -19,13 +19,23 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install yt-dlp and dependencies
         run: |
           pip install yt-dlp
           sudo apt-get update
           sudo apt-get install -y wget curl unzip chromium-browser
-          npm install
 
+      - name: Check if package.json exists
+        run: |
+          if [ ! -f package.json ]; then
+            echo "❌ package.json is missing! Aborting."
+            exit 1
+          fi
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
         run: |
           if [ -z "${{ secrets.YOUTUBE_COOKIES }}" ]; then
@@ -37,27 +47,56 @@ jobs:
             echo "${{ secrets.YOUTUBE_COOKIES }}" | cut -c 1-50
           fi
 
+      # ✅ יצירת קובץ cookies.txt מתוך GitHub Secrets
       - name: Create cookies.txt from GitHub Secrets
         run: |
           echo "${{ secrets.YOUTUBE_COOKIES }}" | tr -d '\r' > cookies.txt
           echo "✅ Created cookies.txt successfully!"
 
+      # ✅ בדיקה אם הקובץ נוצר כהלכה + הצגת השורות הראשונות
+      - name: Debug cookies file
+        run: |
+          echo "===== Debugging cookies.txt ====="
+          if [ -f cookies.txt ]; then
+            echo "✅ cookies.txt exists!"
+          else
+            echo "❌ cookies.txt is missing!"
+            exit 1
+          fi
+          echo "===== Showing first 20 lines of cookies.txt ====="
+          head -n 20 cookies.txt
+          echo "===== Showing special characters ====="
+          od -c cookies.txt
+
+      # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
           yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      - name: Install Puppeteer and Chrome
+      # ✅ בדיקה אם הקובץ video.mp4 נוצר בהצלחה
+      - name: Debug video file
         run: |
-          npm install puppeteer
-          npx puppeteer browsers install chrome
-          echo "✅ Puppeteer and Chrome installed!"
+          echo "===== Checking downloaded video file ====="
+          if [ -f "episode.mp4" ]; then
+            echo "✅ episode.mp4 exists!"
+            ls -lh episode.mp4
+          else
+            echo "❌ episode.mp4 is missing!"
+            exit 1
+          fi
 
-      - name: Run the YouTube to Spotify Script
-        run: npm start
+      # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
+      - name: Upload Video Episode to Spotify (Using Cookies)
+        uses: amram3133/youtube_to_spotify@main
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
           EPISODE_PATH: /github/workspace
           YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
+
+      - name: Debug final state
+        run: |
+          echo "==== Debugging final files ===="
+          ls -lh /github/workspace
