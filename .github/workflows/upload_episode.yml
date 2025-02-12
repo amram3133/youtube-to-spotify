@@ -102,11 +102,24 @@ jobs:
             echo "✅ episode.mp4 exists!"
           fi
 
+      # ✅ הצגת קבצים בתיקייה כדי לוודא שהקובץ במקום הנכון
+      - name: Debug Files Before Upload
+        run: |
+          echo "===== Listing all files before upload ====="
+          ls -lh /home/runner/work/youtube-to-spotify/youtube-to-spotify
+          ls -lh /github/workspace || echo "❌ /github/workspace is missing"
+
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
         uses: amram3133/youtube_to_spotify@main
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
-          EPISODE_PATH: /home/runner/work/youtube-to-spotify/youtube-to-spotify
+          EPISODE_PATH: /home/runner/work/youtube-to-spotify/youtube-to-spotify/episode.mp4
           YOUTUBE_COOKIES_PATH: "/home/runner/work/youtube-to-spotify/youtube-to-spotify/cookies.txt"
+
+      # ✅ בדיקת סטטוס סופי
+      - name: Debug Final Status
+        run: |
+          echo "===== Final check ====="
+          echo "Spotify upload process completed, check logs above for errors."
