@@ -21,19 +21,9 @@ jobs:
 
       - name: Install yt-dlp and dependencies
         run: |
-          pip install yt-dlp
+          pip install --upgrade yt-dlp
           sudo apt-get update
           sudo apt-get install -y wget curl unzip chromium-browser
-
-      - name: Check if package.json exists
-        run: |
-          if [ ! -f package.json ]; then
-            echo "❌ package.json is missing! Aborting."
-            exit 1
-          fi
-
-      - name: Install Node.js dependencies
-        run: npm install
 
       # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
@@ -86,6 +76,12 @@ jobs:
             echo "❌ episode.mp4 is missing!"
             exit 1
           fi
+
+      # ✅ התקנת Puppeteer Chromium עבור Spotify
+      - name: Install Puppeteer Chromium
+        run: |
+          npm install puppeteer
+          npx puppeteer browsers install chrome
 
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
