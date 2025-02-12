@@ -31,8 +31,11 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install yt-dlp
-        run: pip install yt-dlp
+      - name: Install dependencies
+        run: |
+          pip install yt-dlp
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
@@ -70,9 +73,21 @@ jobs:
       # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
-          yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
+          yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" \
+          --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
+
+      # ✅ אם הקובץ לא נוצר, ננסה למזג את קובצי ה-webm ל-mp4
+      - name: Convert WebM to MP4 if needed
+        run: |
+          if [ ! -f episode.mp4 ]; then
+            echo "❌ episode.mp4 is missing, trying to merge WebM files..."
+            if [ -f episode.f313.webm ] && [ -f episode.f251.webm ]; then
+              ffmpeg -i episode.f313.webm -i episode.f251.webm \
+              -c:v copy -c:a aac episode.mp4
+            fi
+          fi
 
       # ✅ בדיקה אם הקובץ episode.mp4 קיים
       - name: Check Downloaded Video
