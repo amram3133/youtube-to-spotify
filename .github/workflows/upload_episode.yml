@@ -99,6 +99,14 @@ jobs:
           echo "===== Checking available formats for video ====="
           yt-dlp -F "$(jq -r '.id' episode.json)"
 
+      # ✅ התקנת Chromium לפעולת Puppeteer
+      - name: Install Chromium
+        run: |
+          echo "===== Installing Chromium ====="
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          echo "✅ Chromium installed successfully!"
+
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
         uses: Schroedinger-Hat/youtube-to-spotify@v2.5.0
@@ -115,4 +123,4 @@ jobs:
           ls -lh /github/workspace/cookies.txt
           cat /github/workspace/cookies.txt | head -n 20
           echo "==== Checking if the video file exists ===="
-          ls -lh /github/workspace/episode.mp4
+          ls -lh /github/workspace/episode.mp4"
