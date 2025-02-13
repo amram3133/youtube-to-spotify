@@ -14,28 +14,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set working directory
-        run: |
-          echo "===== Checking current working directory ====="
-          pwd
-          echo "===== Listing files in current directory ====="
-          ls -lh
-          echo "===== Changing working directory to repository location ====="
-          cd /home/runner/work/youtube-to-spotify/youtube-to-spotify || exit 1
-          echo "===== New working directory ====="
-          pwd
-          echo "WORKSPACE_PATH=/home/runner/work/youtube-to-spotify/youtube-to-spotify" >> $GITHUB_ENV
-
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          pip install yt-dlp
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+      - name: Install yt-dlp
+        run: pip install yt-dlp
 
       # ✅ בדיקה אם הסוד YOUTUBE_COOKIES קיים
       - name: Debug GitHub Secret
@@ -73,53 +58,33 @@ jobs:
       # ✅ הורדת הסרטון מ-YouTube בעזרת yt-dlp + שימוש ב-cookies.txt
       - name: Download YouTube Video (Full Video)
         run: |
-          yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" \
-          --merge-output-format mp4 \
+          yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 \
           --cookies cookies.txt \
           -o "episode.mp4" "$(jq -r '.id' episode.json)"
 
-      # ✅ אם הקובץ לא נוצר, ננסה למזג את קובצי ה-webm ל-mp4
-      - name: Convert WebM to MP4 if needed
+      # ✅ בדיקת קובץ הווידאו לפני העלאה
+      - name: Verify Video File
         run: |
-          if [ ! -f episode.mp4 ]; then
-            echo "❌ episode.mp4 is missing, trying to merge WebM files..."
-            if [ -f episode.f313.webm ] && [ -f episode.f251.webm ]; then
-              ffmpeg -i episode.f313.webm -i episode.f251.webm \
-              -c:v copy -c:a aac episode.mp4
-            fi
-          fi
-
-      # ✅ בדיקה אם הקובץ episode.mp4 קיים
-      - name: Check Downloaded Video
-        run: |
-          echo "===== Checking downloaded video file ====="
-          if [ ! -f episode.mp4 ]; then
-            echo "❌ episode.mp4 is missing!"
-            echo "===== Listing all files in workspace ====="
-            ls -lh
-            exit 1
+          if [ -f "episode.mp4" ]; then
+            echo "✅ Video file exists: episode.mp4"
+            ls -lh episode.mp4
           else
-            echo "✅ episode.mp4 exists!"
+            echo "❌ Video file is missing!"
+            exit 1
           fi
-
-      # ✅ הצגת קבצים בתיקייה כדי לוודא שהקובץ במקום הנכון
-      - name: Debug Files Before Upload
-        run: |
-          echo "===== Listing all files before upload ====="
-          ls -lh /home/runner/work/youtube-to-spotify/youtube-to-spotify
-          ls -lh /github/workspace || echo "❌ /github/workspace is missing"
 
       # ✅ העלאת הווידאו ל-Spotify **תוך שימוש ב-cookies.txt**
       - name: Upload Video Episode to Spotify (Using Cookies)
-        uses: amram3133/youtube_to_spotify@main
+        uses: Schroedinger-Hat/youtube-to-spotify@v2.4.0  # אם v2.5.0 לא עובד, נסה גרסה ישנה יותר
         env:
           SPOTIFY_EMAIL: ${{ secrets.SPOTIFY_EMAIL }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
-          EPISODE_PATH: /home/runner/work/youtube-to-spotify/youtube-to-spotify/episode.mp4
-          YOUTUBE_COOKIES_PATH: "/home/runner/work/youtube-to-spotify/youtube-to-spotify/cookies.txt"
+          EPISODE_PATH: /github/workspace
+          YOUTUBE_COOKIES_PATH: "/github/workspace/cookies.txt"
+          YTDLP_ARGS: "--cookies /github/workspace/cookies.txt"
 
-      # ✅ בדיקת סטטוס סופי
-      - name: Debug Final Status
+      # ✅ דיבוג אחרי ההעלאה
+      - name: Debug After Upload
         run: |
-          echo "===== Final check ====="
-          echo "Spotify upload process completed, check logs above for errors."
+          echo "==== Debugging after Spotify upload ===="
+          ls -lh /github/workspace/
